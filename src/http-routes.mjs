@@ -140,8 +140,9 @@ export function createHttpHandler(ctx) {
         const device = await eufy.getDevice(sn);
         const cam = device.camera?.();
         if (!cam) return json(res, 404, { error: "no camera on this device" });
-        // A battery-capable camera pays a radio wake for every still; one without that capability does not. Same test the idle
-        // watcher uses (see stream-idle.mjs), so "which cameras are expensive" is decided in one way.
+        // A battery-capable camera pays a radio wake for every still; one without that capability does not.
+        // Same test the idle watcher uses (see stream-idle.mjs), so "which cameras are expensive" is
+        // decided in one way.
         const onBattery = (device.describe?.()?.capabilities ?? []).includes("battery");
         let wantLive = cfg.snapshotLive === "auto" ? !onBattery : cfg.snapshotLive;
         switch (snapshotMode) {
