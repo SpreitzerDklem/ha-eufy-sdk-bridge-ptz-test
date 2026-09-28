@@ -46,9 +46,16 @@ export function createEufy({ cfg, DEBUG_P2P }) {
  * Caching is safe because the SDK delivers realtime updates to the *latest* Device it handed out for
  * a serial (`liveDevices` holds a WeakRef to it); with every caller sharing this one object it stays
  * the live target and keeps receiving pushes and background refreshes. The cache is dropped on every
- * successful (re-)login (`eufy.forgetDevices()`), since a fresh session rebinds command sinks.
+ * successful (re-)login (`eufy.forgetDevices()`), since a fresh session rebinds command sinks. That is
+ * also the only point where a device that MOVED to another HomeBase gets a fresh command context: until
+ * then its cached Device keeps the old station and channel (rare, so not handled beyond re-login).
+ *
+ * A serial that leaves the account (removed or unshared) is pruned on the next `getDevices()`, so
+ * `device.*` commands for it fail with "no device" instead of answering from a stale model, and the
+ * SDK's WeakRef in `liveDevices` can clear. `getDevices()` keeps previously known devices on a partial
+ * cloud outage, so a transient failure evicts nothing that still exists.
  */
-function memoizeGetDevice(eufy) {
+export function memoizeGetDevice(eufy) {
   const cache = new Map(); // sn -> Promise<Device>
   const real = eufy.getDevice.bind(eufy);
   eufy.getDevice = (sn) => {
@@ -61,6 +68,13 @@ function memoizeGetDevice(eufy) {
       cache.set(sn, p);
     }
     return p;
+  };
+  const realList = eufy.getDevices.bind(eufy);
+  eufy.getDevices = async () => {
+    const devices = await realList();
+    const live = new Set(devices.map((d) => d.sn));
+    for (const sn of cache.keys()) if (!live.has(sn)) cache.delete(sn);
+    return devices;
   };
   eufy.forgetDevices = () => cache.clear();
 }
