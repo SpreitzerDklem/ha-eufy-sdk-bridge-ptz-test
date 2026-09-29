@@ -118,6 +118,9 @@ Point the integration at this host's IP and `BRIDGE_PORT`.
 | `BRIDGE_SELF_HOST`                 | `127.0.0.1`                     | host go2rtc uses to pull `/stream/<sn>` back from the bridge                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `BRIDGE_PREWARM`                   | off                             | `1` = speculatively open a camera's P2P session on a high-intent event (doorbell/person/pet/package) so a following live view starts instantly. Off by default — it holds a battery camera's radio open ~28s per event                                                                                                                                                                                                                                                                                                                             |
 
+`SNAPSHOT_LIVE` can be overridden for one request with `?mode=auto`, `?mode=stored`, or
+`?mode=live`.
+
 ---
 
 ## First run: 2FA / captcha
