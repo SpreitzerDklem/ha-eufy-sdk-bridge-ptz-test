@@ -67,7 +67,8 @@ export function createDeviceView(ctx) {
     // A device can declare a write-only setting whose name a reported property already carries (a
     // doorbell reports `ringtoneVolume` AND accepts a write-only one). The reported spec wins — it has a
     // live value — so a write-only is added only when the name is new, or a host builds two entities
-    // with the same unique id.
+    // with the same unique id. The setter is found by naming convention (`alarmVolume` → `setAlarmVolume`):
+    // a member whose setter is named otherwise is skipped, not guessed, so a mismatch silently omits it.
     const reportedNames = new Set(reported.map((p) => p.name));
     const writeOnly = [];
     for (const cap of dev.describe?.().details ?? []) {
@@ -100,12 +101,7 @@ export function createDeviceView(ctx) {
   async function deviceList() {
     const devices = await eufy.getDevices();
     return Promise.all(
-      devices.map((d) =>
-        describeDevice(d.sn).catch((e) => ({
-          sn: d.sn,
-          error: String(e?.message ?? e),
-        })),
-      ),
+      devices.map((d) => describeDevice(d.sn).catch((e) => ({ sn: d.sn, error: String(e?.message ?? e) }))),
     );
   }
 
