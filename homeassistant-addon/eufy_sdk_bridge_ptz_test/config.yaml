@@ -1,5 +1,5 @@
 name: Eufy SDK Bridge PTZ Test
-version: "0.1.0"
+version: "0.1.1"
 slug: eufy_sdk_bridge_ptz_test
 stage: experimental
 description: Temporary PTZ test build using the upstream PR #45 bridge image. Run one bridge per Eufy account.
