@@ -4,7 +4,8 @@ slug: eufy_sdk_bridge_ptz_test
 stage: experimental
 description: Temporary PTZ test build using the upstream PR #45 bridge image. Run one bridge per Eufy account.
 url: "https://github.com/SpreitzerDklem/ha-eufy-sdk-bridge-ptz-test/tree/main/homeassistant-addon/eufy_sdk_bridge_ptz_test"
-image: "ghcr.io/spreitzerdklem/addon-eufy-sdk-bridge-ptz-test"
+# No prebuilt add-on image: Supervisor builds this wrapper locally from build.yaml.
+# build.yaml uses the published custom bridge image as BUILD_FROM.
 arch:
   - aarch64
   - amd64

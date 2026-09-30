@@ -31,7 +31,8 @@ Add this repository as a local/custom add-on repository, or copy that directory 
 Home Assistant add-on repository. Install **Eufy SDK Bridge PTZ Test** and configure the same
 Eufy email, password, country, ports, and optional go2rtc/RTSP settings as usual.
 
-The add-on uses the custom image above, has the unique slug `eufy_sdk_bridge_ptz_test`,
+The add-on is built locally by Home Assistant from `build.yaml`, which uses the custom
+bridge image above as its base. It has the unique slug `eufy_sdk_bridge_ptz_test`,
 publishes the bridge on port 3000 and RTSP on 8554, registers `eufy_sdk` discovery, and
 persists the Eufy session in `/data`.
 

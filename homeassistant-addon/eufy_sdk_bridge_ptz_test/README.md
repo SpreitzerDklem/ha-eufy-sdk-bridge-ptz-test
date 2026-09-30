@@ -1,6 +1,6 @@
 # Home Assistant Add-on: Eufy SDK Bridge PTZ Test
 
-This temporary add-on uses the custom bridge image:
+Home Assistant builds this temporary wrapper locally using the custom bridge image:
 
 `ghcr.io/spreitzerdklem/ha-eufy-sdk-bridge:ptz-test`
 
