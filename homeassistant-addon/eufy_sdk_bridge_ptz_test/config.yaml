@@ -1,0 +1,60 @@
+name: Eufy SDK Bridge PTZ Test
+version: "0.1.0"
+slug: eufy_sdk_bridge_ptz_test
+stage: experimental
+description: Temporary PTZ test build using the upstream PR #45 bridge image. Run one bridge per Eufy account.
+url: "https://github.com/SpreitzerDklem/ha-eufy-sdk-bridge-ptz-test/tree/main/homeassistant-addon/eufy_sdk_bridge_ptz_test"
+image: "ghcr.io/spreitzerdklem/addon-eufy-sdk-bridge-ptz-test"
+arch:
+  - aarch64
+  - amd64
+init: false
+hassio_api: true
+discovery:
+  - eufy_sdk
+ingress: true
+ingress_port: 3000
+panel_icon: mdi:cctv
+ports:
+  3000/tcp: 3000
+  8554/tcp: 8554
+ports_description:
+  3000/tcp: Bridge WebSocket and HTTP control
+  8554/tcp: RTSP
+options:
+  email: ""
+  password: ""
+  country: GB
+  poll_ms: 600000
+  stream_idle_ms: 300000
+  rtsp_idle_off_ms: 300000
+  prewarm: false
+  event_log: true
+  debug: false
+  debug_p2p: false
+  go2rtc_enable: true
+  solix_email: ""
+  solix_password: ""
+  solix_country: ""
+  solix_scene_poll_ms: 90000
+  solix_retry_base_ms: 900000
+  solix_retry_max_ms: 3600000
+schema:
+  email: str
+  password: password
+  country: str
+  poll_ms: int(0,)
+  stream_idle_ms: int(0,)
+  rtsp_idle_off_ms: int(0,)
+  stream_battery_budget_ms: "int(1,)?"
+  prewarm: bool
+  event_log: bool
+  debug: bool
+  debug_p2p: bool
+  go2rtc_enable: bool
+  solix_email: "str?"
+  solix_password: "password?"
+  solix_country: "str?"
+  solix_scene_poll_ms: "int(5000,)?"
+  solix_retry_base_ms: "int(10000,)?"
+  solix_retry_max_ms: "int(10000,)?"

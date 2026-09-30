@@ -1,77 +1,63 @@
-# ha-eufy-sdk-bridge
+# ha-eufy-sdk-bridge PTZ test build
 
-[![CI](https://github.com/mega-yfue/ha-eufy-sdk-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/mega-yfue/ha-eufy-sdk-bridge/actions/workflows/ci.yml)
-[![node](https://img.shields.io/badge/node-%E2%89%A524-brightgreen?logo=nodedotjs&logoColor=white)](./package.json)
-[![license](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
+This repository is a temporary, independently published build of the upstream
+[`ha-eufy-sdk-bridge`](https://github.com/mega-yfue/ha-eufy-sdk-bridge) development code.
+It exists to test PTZ controls for the Eufy Indoor Cam Pan & Tilt 2K (`T8410`) in
+Home Assistant, where the official stable and Dev add-ons still reported `no action 'left'`.
 
-The host-facing daemon: one process that logs into eufy **once** and exposes the
-[`eufy-sdk`](https://github.com/mega-yfue/eufy-sdk) to a frontend — Home Assistant, a web UI,
-anything. Ships as a multi-arch Docker image with [go2rtc](https://github.com/AlexxIT/go2rtc)
-bundled, so live camera video is available as RTSP / WebRTC / MSE / HLS with nothing else to install.
+The source is upstream `dev` at commit `497eb7d2e77e49e375866b098e73cf6f003ef758`.
+That commit contains merged PR #45 (`3792b4e596069c1fa637d0a6efb0cf4a557fde00`),
+which resolves actions through `dev.ptz?.()` and supports `left`, `right`, `up`, `down`,
+and dotted actions such as `preset.goto`.
 
+## Image
+
+The manually runnable GitHub Actions workflow publishes:
+
+```text
+ghcr.io/spreitzerdklem/ha-eufy-sdk-bridge:ptz-test
 ```
-WS    :3000/ws             control, state, events     ← the frontend talks to this
-HTTP  :3000/stream/<sn>    live video (Annex-B)       ← go2rtc pulls this
-HTTP  :3000/snapshot/<sn>  a JPEG still
-HTTP  :3000/healthz        which cameras are streaming
+
+It builds `linux/amd64` and `linux/arm64` with Docker Buildx and authenticates with the
+repository `GITHUB_TOKEN`. GitHub may initially make the package private. If so, open the
+package settings at `github.com/SpreitzerDklem?tab=packages` and change the GHCR package
+visibility to **Public**, so Home Assistant can pull it without registry credentials.
+
+## Home Assistant add-on
+
+The wrapper is in
+[`homeassistant-addon/eufy_sdk_bridge_ptz_test/`](homeassistant-addon/eufy_sdk_bridge_ptz_test/).
+Add this repository as a local/custom add-on repository, or copy that directory into your
+Home Assistant add-on repository. Install **Eufy SDK Bridge PTZ Test** and configure the same
+Eufy email, password, country, ports, and optional go2rtc/RTSP settings as usual.
+
+The add-on uses the custom image above, has the unique slug `eufy_sdk_bridge_ptz_test`,
+publishes the bridge on port 3000 and RTSP on 8554, registers `eufy_sdk` discovery, and
+persists the Eufy session in `/data`.
+
+**Do not run the official stable/Dev bridge and this test bridge simultaneously.** They use
+the same Eufy account/session and can displace or interfere with one another. Stop the other
+bridge before starting this one.
+
+## Verification
+
+1. Run **Publish PTZ test image to GHCR** once from the Actions tab.
+2. Confirm its `imagetools inspect` step lists `linux/amd64` and `linux/arm64`.
+3. Make the GHCR package public if Home Assistant cannot pull it anonymously.
+4. Stop the official bridge, install/start the PTZ test add-on, and complete Eufy login/2FA.
+5. Reload or reconnect the Home Assistant `eufy-sdk` integration and enable bridge debug logging.
+6. Press a PTZ button for the T8410. The add-on log should show:
+
+```text
+device.action → left sn=T8410...
+device.action OK left ...
 ```
 
-Video is deliberately **not** on the WebSocket: the WS hands back a URL, and _connecting to that URL
-is what starts the camera — disconnecting is what stops it_. There is no "stream is running" flag to
-drift out of sync.
+This should replace the old `no action 'left' on T8410...` / `no action 'right'` error.
 
-## Run it
-
-Pull the published image and run it (bundles the SDK + go2rtc):
+For a source-level check:
 
 ```bash
-docker run -d --name eufy-bridge --network host \
-  -e EUFY_EMAIL='you@example.com' -e EUFY_PASSWORD='…' -e EUFY_COUNTRY='GB' \
-  -v /opt/eufy-bridge-data:/app/data \
-  ghcr.io/mega-yfue/ha-eufy-sdk-bridge:latest
+git merge-base --is-ancestor 3792b4e596069c1fa637d0a6efb0cf4a557fde00 HEAD
+grep -F 'dev.ptz?.()' src/ws-server.mjs
 ```
-
-or with Compose (`cp .env.example .env` first): `docker compose up -d`.
-
-**Full deploy guide (alongside Home Assistant, config reference, first-run 2FA/captcha):**
-[docs/docker-compose.md](./docs/docker-compose.md) · **WS protocol:** [docs/ws-protocol.md](./docs/ws-protocol.md)
-
-## Where it fits
-
-| Repo                                                                  | Role                                          |
-| --------------------------------------------------------------------- | --------------------------------------------- |
-| [`eufy-sdk`](https://github.com/mega-yfue/eufy-sdk)                   | the HA-agnostic library                       |
-| **`ha-eufy-sdk-bridge`**                                              | **this** — WS + HTTP + go2rtc daemon (Docker) |
-| [`ha-eufy-sdk-addon`](https://github.com/mega-yfue/ha-eufy-sdk-addon) | Home Assistant add-on wrapper                 |
-| [`ha-eufy-sdk`](https://github.com/mega-yfue/ha-eufy-sdk)             | the HACS integration (front door)             |
-
-> Status: working — WS control + auth-over-WS (2FA/captcha), device listing, snapshots, and go2rtc
-> streaming. **Optional Anker Solix** support (power stations / smart meter / Solarbank, a separate account)
-> via `SOLIX_EMAIL` / `SOLIX_PASSWORD` — see [docs/ws-protocol.md](./docs/ws-protocol.md) (`solix.*`).
-> Published image: `ghcr.io/mega-yfue/ha-eufy-sdk-bridge` (multi-arch: `amd64` · `arm64`).
-> **Publishing a GitHub Release** builds and pushes the versioned + `:latest` tags
-> automatically ([`.github/workflows/publish-ghcr.yml`](./.github/workflows/publish-ghcr.yml)); the same
-> build runs locally via [`scripts/publish-multiarch.sh`](./scripts/publish-multiarch.sh). A merge to the
-> `dev` branch publishes a rolling `:dev` tag for testing.
-
-## Contributing
-
-Contributions are welcome — please branch from **`dev`** and open your PR against **`dev`** (not
-`main`). See [CONTRIBUTING.md](./CONTRIBUTING.md) for the branch model, CI checks, and how releases
-are cut.
-
-## Develop
-
-The bridge is ESM (no build step) and depends on the SDK as a normal npm package
-([`@mega-yfue/eufy-sdk`](https://www.npmjs.com/package/@mega-yfue/eufy-sdk)) — `npm install` pulls it
-from the registry, no sibling checkout needed.
-
-```bash
-npm install
-npm test          # node --test
-npm run lint      # prettier --check .   (npm run format to fix)
-```
-
-Every PR into `main` or `dev` runs the CI gate ([`.github/workflows/ci.yml`](./.github/workflows/ci.yml)):
-`npm ci` → lint → compile (`node --check` on each `.mjs`) → test. `main` is the public release line;
-`dev` is the development line (rolling `:dev` image).

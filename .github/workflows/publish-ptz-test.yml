@@ -1,0 +1,69 @@
+name: Publish PTZ test image to GHCR
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "Dockerfile"
+      - "package.json"
+      - "package-lock.json"
+      - "server.mjs"
+      - "streams.mjs"
+      - "go2rtc-config.mjs"
+      - "src/**"
+      - "bin/**"
+      - ".github/workflows/publish-ptz-test.yml"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/spreitzerdklem/ha-eufy-sdk-bridge
+  PTZ_FIX_MERGE: 3792b4e596069c1fa637d0a6efb0cf4a557fde00
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the selected source revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify the upstream PTZ fix is present
+        shell: bash
+        run: |
+          git merge-base --is-ancestor "$PTZ_FIX_MERGE" HEAD
+          grep -F 'dev.ptz?.()' src/ws-server.mjs
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish the multi-architecture image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE }}:ptz-test
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Verify the published manifest
+        run: docker buildx imagetools inspect "$IMAGE:ptz-test"
+      - name: Write summary
+        run: |
+          {
+            echo "### Published \\${IMAGE}:ptz-test"
+            echo ""
+            echo "Source revision: \\`${GITHUB_SHA}\\`"
+            echo "Platforms: \\`linux/amd64\\`, \\`linux/arm64\\`"
+          } >> "$GITHUB_STEP_SUMMARY"

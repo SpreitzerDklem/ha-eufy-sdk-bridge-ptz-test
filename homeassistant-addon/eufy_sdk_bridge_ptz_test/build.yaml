@@ -1,0 +1,6 @@
+# Home Assistant builds this thin wrapper FROM the exact custom bridge image.
+build_from:
+  aarch64: ghcr.io/spreitzerdklem/ha-eufy-sdk-bridge:ptz-test
+  amd64: ghcr.io/spreitzerdklem/ha-eufy-sdk-bridge:ptz-test
+labels:
+  org.opencontainers.image.source: "https://github.com/SpreitzerDklem/ha-eufy-sdk-bridge-ptz-test"
