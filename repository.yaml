@@ -1,0 +1,4 @@
+# Home Assistant add-on repository metadata.
+name: Eufy SDK Bridge PTZ Test
+url: "https://github.com/SpreitzerDklem/ha-eufy-sdk-bridge-ptz-test"
+maintainer: SpreitzerDklem
